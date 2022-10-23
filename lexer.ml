@@ -1,5 +1,5 @@
 type lexeme =
-  |Integer of int
+  |Integer_lex of int
   |Plus_sign
   |Left_parenthesis
   |Right_parenthesis
@@ -41,7 +41,8 @@ let lexical_analysis f =
       |"(" -> Left_parenthesis::(aux (index + 1) str)
       |")" -> Right_parenthesis::(aux (index + 1) str)
       |"+" -> Plus_sign::(aux (index + 1) str)
-      |_ -> Integer(int_of_string (complete_word str index))::(aux (index + (String.length (complete_word str index))) str)
+      |_ -> Integer_lex(int_of_string (complete_word str index))::(aux (index + (String.length (complete_word str index))) str)
     else []
   in aux 0 f
 ;;
+
