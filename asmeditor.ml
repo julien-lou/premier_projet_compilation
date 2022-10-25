@@ -1,23 +1,50 @@
 open Format
 open X86_64
 open Asyntax
+open Typecheck
 
+
+let n = ref 0 (* n counts the quantity of data already used *)
 
 let rec compile_expr e =
+  let type_e = static_analysis e in
   match e with
-  |Parentheses(arith_e) -> compile_expr arith_e
-  |Integer(number) -> movq (imm number) (reg rax)
+  |Parentheses(arith_e) -> 
+    begin
+      let t = (compile_expr arith_e).text in
+      let d = (compile_expr arith_e).data in
+       { text = t; data = d; }
+    end
+  |Integer(number) -> 
+    { text = movq (imm number) (reg rax); data = nop; }
   |Function(name_of_fn, arith_e) -> 
-    compile_expr arith_e ++
-    movq (reg rax) (reg rdi) ++
-    (fn_of_name name_of_fn)
+    begin 
+      let t = (compile_expr arith_e).text in
+      let d = (compile_expr arith_e).data in
+      { text = t ++
+      movq (reg rax) (reg rdi) ++
+      (fn_of_name name_of_fn);
+      data = d; }
+    end
   |Operation(name_of_op, e1, e2) ->
-    compile_expr e1 ++
-    pushq (reg rax) ++
-    compile_expr e2 ++
-    movq (reg rax) (reg rsi) ++
-    popq rdi ++
-    (operation_of_name name_of_op)
+    begin 
+      let t1 = (compile_expr e1).text in
+      let d1 = (compile_expr e1).data in
+      let t2 = (compile_expr e2).text in
+      let d2 = (compile_expr e2).data in
+      if type_e = "integer" then
+        {
+        text = t1 ++
+        pushq (reg rax) ++
+        t2 ++
+        movq (reg rax) (reg rsi) ++
+        popq rdi ++
+        (operation_of_name_type name_of_op type_e);
+        data = d1 ++ d2;
+        }
+      else
+        raise (Error "The compiler is not finished.")
+    end
   |Empty -> raise (Error "An expression cannot be empty.")
 
 and fn_of_name name_of_fn =
@@ -27,18 +54,26 @@ and fn_of_name name_of_fn =
   |_ ->
     raise (Error (Printf.sprintf "The function %s is not defined." name_of_fn))
 
-and operation_of_name name_of_op =
+and operation_of_name_type name_of_op type_of_op =
   match name_of_op with
   |"Addition" ->
-    compile_addition
+    begin 
+      if type_of_op = "integer" then
+        compile_add_int
+      else
+        compile_add_float
+    end
   |_ ->
     raise (Error (Printf.sprintf "The operation %s is not defined." name_of_op))
     
 and compile_Plus = 
   movq (reg rdi) (reg rax)
 
-and compile_addition =
+and compile_add_int =
   call "add_int"
+
+and compile_add_float =
+  call "add_float"
 ;;
 
 let compile_printint =
@@ -68,5 +103,38 @@ print_int:
         call  printf
         ret
 
+add_float:
+        movq    %rdi, %xmm0
+        movq    %rsi, %xmm1
+        addsd	  %xmm0, %xmm1
+        movq	  %xmm1, %rax
+        ret
+
+print_float:
+        movq	  %rdi, %xmm0
+        mov	    $1, %rax	#rax is the number of float arguments
+        mov     $S_float, %rdi
+        call    printf
+        mov	    $0, %rax
+        ret
           "
 
+let define_labels = 
+  label "S_int" ++ string "%d\n" ++
+  label "S_float" ++ string "%f\n"
+
+let create_code e =
+  let comp = compile_expr e in
+  let t = comp.text in
+  let d = comp.data in
+  { text =
+    begin_main ++
+    t ++
+    movq (reg rax) (reg rdi) ++
+    compile_printint ++
+    xorq (reg rax) (reg rax) ++
+    ret ++
+  define_functions;
+    data =
+    d ++
+    define_labels; }

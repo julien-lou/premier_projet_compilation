@@ -19,15 +19,7 @@ let type_e = static_analysis syn
 ;;
 
 let () =
-  let code = {  text =
-    begin_main ++
-    compile_expr syn ++
-    movq (reg rax) (reg rdi) ++
-    compile_printint ++
-    xorq (reg rax) (reg rax) ++
-    ret ++
-  define_functions;
-    data = label "S_int" ++ string "%d\n"; } in
+  let code = create_code syn in
     let c = open_out "add.s" in
     let fmt = formatter_of_out_channel c in
     X86_64.print_program fmt code;
