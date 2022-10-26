@@ -122,13 +122,30 @@ mul_int:
         ret
 
 div_int:
-        xorq    %rdx, %rdx
-        movq    %rdi, %rax
+        xorq    %rdx, %rdx   
+        testq   %rdi, %rdi
+        jns     resume_div
+        notq    %rdx  #case where the dividend is negative
+  resume_div:    
+        movq    %rdi, %rax                
         idivq   %rsi
         ret
 
 mod_int:
         xorq    %rdx, %rdx
+        testq   %rdi, %rdi
+        jns     positive_mod
+        notq    %rdx
+        movq    %rdi, %rax        
+        idivq   %rsi
+        testq   %rsi, %rsi
+        jns     rsi_positive
+        negq    %rsi  
+  rsi_positive:
+        addq    %rsi, %rdx
+        movq    %rdx, %rax
+        ret
+  positive_mod: #if the dividend is positive
         movq    %rdi, %rax
         idivq   %rsi
         movq    %rdx, %rax
