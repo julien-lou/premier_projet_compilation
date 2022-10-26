@@ -4,7 +4,7 @@ open Asyntax
 let rec largest_independent_expression lexeme_list =
   let rec aux list_of_lexeme int_stack =
     match list_of_lexeme with
-      |[] -> raise (Error "Parser error : lie.")
+      |[] -> ([], [])
       |h::[] -> 
         begin match h with
           |Integer_lex(number) -> 
@@ -15,6 +15,10 @@ let rec largest_independent_expression lexeme_list =
                 raise (Error "Missing right parenthesis.")
             end
           |Plus_sign -> raise (Error "Missing argument in addition.")
+          |Minus_sign -> raise (Error "Missing argument in substraction.")
+          |Multiplication_sign -> raise (Error "Missing argument in multiplication.")
+          |Division_sign -> raise (Error "Missing argument in division.")
+          |Modulus_sign -> raise (Error "Missing argument in modulo.")
           |Left_parenthesis -> raise (Error "Missing right parenthesis.")
           |Right_parenthesis -> 
             begin 
@@ -41,6 +45,26 @@ let rec largest_independent_expression lexeme_list =
               let left, right = (aux t int_stack) in
               ([Plus_sign] @ left, right)
             end
+          |Minus_sign ->
+            begin
+              let left, right = (aux t int_stack) in
+              ([Minus_sign] @ left, right)
+            end
+          |Multiplication_sign ->
+            begin
+              let left, right = (aux t int_stack) in
+              ([Multiplication_sign] @ left, right)
+            end
+          |Division_sign ->
+            begin
+              let left, right = (aux t int_stack) in
+              ([Division_sign] @ left, right)
+            end
+          |Modulus_sign ->
+            begin
+              let left, right = (aux t int_stack) in
+              ([Modulus_sign] @ left, right)
+            end
           |Left_parenthesis ->
             begin
               let left, right = (aux t (int_stack + 1)) in
@@ -62,6 +86,20 @@ let rec largest_independent_expression lexeme_list =
   in aux lexeme_list 0
 ;;
 
+let rec largest_priority_expression lexeme_list =
+  let rec aux list_of_lexeme left =
+    let independent, rest = largest_independent_expression list_of_lexeme in
+    match rest with
+    |[] -> (left @ independent, rest)
+    |h::t ->
+      begin match h with
+        |Plus_sign -> (left @ independent, rest) (* no priority *)
+        |Minus_sign -> (left @ independent, rest)
+        |_ -> (aux t (left @ independent @ [h]))
+      end
+    in aux lexeme_list []
+;;
+
 let strip_parentheses lexeme_list =
   let rec strip_right_parenthesis lex_list =
     match lex_list with
@@ -74,6 +112,10 @@ let strip_parentheses lexeme_list =
     |h::t -> (strip_right_parenthesis t)
 ;;
 
+let head l =
+  match l with
+  |[] -> Integer_lex(0)
+  |h::t -> h
 
 let syntax_analysis lexeme_list = 
   let rec aux current_list left_exp =
@@ -81,26 +123,92 @@ let syntax_analysis lexeme_list =
       |[] -> left_exp
       |h::[] -> 
         begin match h with
-          |Integer_lex(number) -> Integer(number)
-          |Plus_sign -> raise (Error "The expression is incorrect.")
+          |Integer_lex(number) -> 
+            begin
+              if left_exp = Empty then
+                Integer(number)
+              else
+                raise (Error "Missing operator between arguments.")
+            end
+          |Plus_sign -> raise (Error "Missing argument in addition.")
+          |Minus_sign -> raise (Error "Missing argument in substraction.")
+          |Multiplication_sign -> raise (Error "Missing argument in multiplication.")
+          |Division_sign -> raise (Error "Missing argument in division.")
+          |Modulus_sign -> raise (Error "Missing argument in modulus.")
           |Left_parenthesis -> raise (Error "Missing right parenthesis.")
           |Right_parenthesis -> raise (Error "Parser error : syntax_analysis.")
         end
       |h::t ->  
         begin match h with
-          |Integer_lex(number) -> aux t (Integer(number))
+          |Integer_lex(number) -> 
+            begin
+              if left_exp = Empty then
+                aux t (Integer(number))
+              else
+                raise (Error "Missing operator between arguments.")
+            end
           |Plus_sign -> 
             begin 
               match left_exp with
                 |Empty ->
                   begin 
-                    let independent_exp, rest = largest_independent_expression t in
-                    aux rest (Function("Plus", (aux independent_exp Empty)))
+                    if (head t) = Left_parenthesis then
+                      let priority_exp, rest = largest_priority_expression t in
+                      aux rest (Function("Plus", (aux priority_exp Empty)))
+                    else
+                      raise (Error "Missing parentheses after addition sign.")
                   end
                 |_ ->
                   begin 
+                    let priority_exp, rest = largest_priority_expression t in
+                    aux rest (Operation("Addition", left_exp, (aux priority_exp Empty)))
+                  end
+            end
+          |Minus_sign -> 
+            begin 
+              match left_exp with
+                |Empty ->
+                  begin 
+                    if (head t) = Left_parenthesis then
+                      let priority_exp, rest = largest_priority_expression t in
+                      aux rest (Function("Minus", (aux priority_exp Empty)))
+                    else
+                      raise (Error "Missing parentheses after substraction sign.")
+                  end
+                |_ ->
+                  begin 
+                    let priority_exp, rest = largest_priority_expression t in
+                    aux rest (Operation("Substraction", left_exp, (aux priority_exp Empty)))
+                  end
+            end
+          |Multiplication_sign -> 
+            begin 
+              match left_exp with
+                |Empty -> raise (Error "Missing left argument in multiplication.")
+                |_ ->
+                  begin 
                     let independent_exp, rest = largest_independent_expression t in
-                    aux rest (Operation("Addition", left_exp, (aux independent_exp Empty)))
+                    aux rest (Operation("Multiplication", left_exp, (aux independent_exp Empty)))
+                  end
+            end
+          |Division_sign -> 
+            begin 
+              match left_exp with
+                |Empty -> raise (Error "Missing left argument in division.")
+                |_ ->
+                  begin 
+                    let independent_exp, rest = largest_independent_expression t in
+                    aux rest (Operation("Division", left_exp, (aux independent_exp Empty)))
+                  end
+            end
+          |Modulus_sign -> 
+            begin 
+              match left_exp with
+                |Empty -> raise (Error "Missing left argument in modulus.")
+                |_ ->
+                  begin 
+                    let independent_exp, rest = largest_independent_expression t in
+                    aux rest (Operation("Modulo", left_exp, (aux independent_exp Empty)))
                   end
             end
           |Left_parenthesis ->
@@ -112,5 +220,3 @@ let syntax_analysis lexeme_list =
         end
   in aux lexeme_list Empty
 ;;
-
-

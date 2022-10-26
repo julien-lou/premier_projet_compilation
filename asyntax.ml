@@ -1,4 +1,5 @@
 exception Error of string
+;;
 
 type arith_exp =
   |Empty

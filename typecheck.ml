@@ -1,6 +1,5 @@
 open Asyntax
 
-(* gives the type of the AST *)
 let rec static_analysis tree =
   match tree with
   |Empty -> "empty"
@@ -9,6 +8,7 @@ let rec static_analysis tree =
   |Function(fn_name, arg) ->
     begin match fn_name with
       |"Plus" -> static_analysis arg
+      |"Minus" -> static_analysis arg
       |_ -> raise (Error (Printf.sprintf "The function %s is not defined." fn_name))
     end
   |Operation(op_name, arg1, arg2) ->
@@ -21,6 +21,42 @@ let rec static_analysis tree =
             "integer"
           else
             raise (Error "The operator + only applies to integers.")
+        end
+      |"Substraction" ->
+        begin
+          let type1 = static_analysis arg1
+          and type2 = static_analysis arg2 in
+          if type1 = type2 && type1 = "integer" then
+            "integer"
+          else
+            raise (Error "The operator - only applies to integers.")
+        end
+      |"Multiplication" ->
+        begin
+          let type1 = static_analysis arg1
+          and type2 = static_analysis arg2 in
+          if type1 = type2 && type1 = "integer" then
+            "integer"
+          else
+            raise (Error "The operator * only applies to integers.")
+        end
+      |"Division" ->
+        begin
+          let type1 = static_analysis arg1
+          and type2 = static_analysis arg2 in
+          if type1 = type2 && type1 = "integer" then
+            "integer"
+          else
+            raise (Error "The operator / only applies to integers.")
+        end
+      |"Modulo" ->
+        begin
+          let type1 = static_analysis arg1
+          and type2 = static_analysis arg2 in
+          if type1 = type2 && type1 = "integer" then
+            "integer"
+          else
+            raise (Error "The operator % only applies to integers.")
         end
       |_ -> raise (Error (Printf.sprintf "The operator %s is not recognised." op_name))
     end

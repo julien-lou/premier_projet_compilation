@@ -2,19 +2,19 @@ INTERFACE := x86_64.cmi lexer.cmi asyntax.cmi parser.cmi typecheck.cmi asmeditor
 MAIN_OBJS := x86_64.cmo lexer.cmo asyntax.cmo parser.cmo typecheck.cmo asmeditor.cmo main.cmo
 
 
-all: prog executeOcaml
+all: aritha
 
-test: createExe
-	./add
+test: executeOcaml createExe
+	./expression
 
 createExe:
-	gcc -no-pie add.s -o add
+	gcc -no-pie expression.s -o add
 
 executeOcaml:
-	./prog
+	./aritha
 
-prog: $(INTERFACE) $(MAIN_OBJS)
-	ocamlc -o prog $(MAIN_OBJS)
+aritha: $(INTERFACE) $(MAIN_OBJS)
+	ocamlc -o aritha $(MAIN_OBJS)
 
 %.cmi: %.mli
 	ocamlc -c $< -o $@
@@ -37,5 +37,5 @@ asmeditor.cmo: asmeditor.ml
 main.cmo: main.ml
 
 clean:
-	rm -f prog add *.cmi *.cmo *.s
+	rm -f aritha expression *.cmi *.cmo *.s
 

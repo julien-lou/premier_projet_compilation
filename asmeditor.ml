@@ -39,7 +39,7 @@ let rec compile_expr e =
         t2 ++
         movq (reg rax) (reg rsi) ++
         popq rdi ++
-        (operation_of_name_type name_of_op type_e);
+        (operation_of_name_type name_of_op);
         data = d1 ++ d2;
         }
       else
@@ -51,26 +51,41 @@ and fn_of_name name_of_fn =
   match name_of_fn with 
   |"Plus" ->
     compile_Plus
+  |"Minus" ->
+    compile_Minus
   |_ ->
     raise (Error (Printf.sprintf "The function %s is not defined." name_of_fn))
 
-and operation_of_name_type name_of_op type_of_op =
+and operation_of_name_type name_of_op =
   match name_of_op with
-  |"Addition" ->
-    begin 
-      if type_of_op = "integer" then
-        compile_add_int
-      else
-        compile_add_float
-    end
+  |"Addition" -> compile_add_int
+  |"Substraction" -> compile_sub_int
+  |"Multiplication" -> compile_mul_int
+  |"Division" -> compile_div_int
+  |"Modulo" -> compile_mod_int
   |_ ->
     raise (Error (Printf.sprintf "The operation %s is not defined." name_of_op))
     
 and compile_Plus = 
   movq (reg rdi) (reg rax)
 
+and compile_Minus =
+  negq (reg rdi) ++
+  movq (reg rdi) (reg rax)
 and compile_add_int =
   call "add_int"
+
+and compile_sub_int =
+  call "sub_int"
+
+and compile_mul_int =
+  call "mul_int"
+
+and compile_div_int =
+  call "div_int"
+
+and compile_mod_int =
+  call "mod_int"
 
 and compile_add_float =
   call "add_float"
@@ -92,15 +107,38 @@ plus:
         movq    %rdi, %rax
 
 add_int:
-        addq    %rdi, %rsi
-        movq    %rsi, %rax
+        addq    %rsi, %rdi
+        movq    %rdi, %rax
+        ret
+
+sub_int:
+        subq    %rsi, %rdi
+        movq    %rdi, %rax
+        ret
+
+mul_int:
+        imulq    %rsi, %rdi
+        movq    %rdi, %rax
+        ret
+
+div_int:
+        xorq    %rdx, %rdx
+        movq    %rdi, %rax
+        idivq   %rsi
+        ret
+
+mod_int:
+        xorq    %rdx, %rdx
+        movq    %rdi, %rax
+        idivq   %rsi
+        movq    %rdx, %rax
         ret
 
 print_int:
-        movq  %rdi, %rsi
-        movq  $S_int, %rdi
-        xorq  %rax, %rax
-        call  printf
+        movq    %rdi, %rsi
+        movq    $S_int, %rdi
+        xorq    %rax, %rax
+        call    printf
         ret
 
 add_float:
@@ -112,10 +150,10 @@ add_float:
 
 print_float:
         movq	  %rdi, %xmm0
-        mov	    $1, %rax	#rax is the number of float arguments
-        mov     $S_float, %rdi
+        movq	  $1, %rax	#rax is the number of float arguments
+        movq    $S_float, %rdi
         call    printf
-        mov	    $0, %rax
+        xorq	  %rax, %rax
         ret
           "
 

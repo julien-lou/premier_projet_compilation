@@ -6,7 +6,7 @@ open X86_64
 open Format
 
 
-let formula = "(3 + 4) + (5 + 6)"
+let formula = "10*10*10 + 9*9*9"
 ;;
 
 let lex = lexical_analysis formula
@@ -20,7 +20,7 @@ let type_e = static_analysis syn
 
 let () =
   let code = create_code syn in
-    let c = open_out "add.s" in
+    let c = open_out "expression.s" in
     let fmt = formatter_of_out_channel c in
     X86_64.print_program fmt code;
     close_out c
