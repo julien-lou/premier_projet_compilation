@@ -17,13 +17,18 @@ let rec compile_expr e =
     end
   |Integer(number) -> 
     { text = movq (imm number) (reg rax); data = nop; }
+  |Float(number) -> n := !n + 1;
+    { text = movq (inline (Printf.sprintf ".F%d" !n)) (reg rax); 
+    data = label (Printf.sprintf ".F%d" !n) ++ 
+      inline (Printf.sprintf "    .double %f" number); }
   |Function(name_of_fn, arith_e) -> 
     begin 
       let t = (compile_expr arith_e).text in
       let d = (compile_expr arith_e).data in
+      let type_arg = static_analysis arith_e in
       { text = t ++
       movq (reg rax) (reg rdi) ++
-      (fn_of_name name_of_fn);
+      (fn_of_name name_of_fn type_arg);
       data = d; }
     end
   |Operation(name_of_op, e1, e2) ->
@@ -39,24 +44,36 @@ let rec compile_expr e =
         t2 ++
         movq (reg rax) (reg rsi) ++
         popq rdi ++
-        (operation_of_name_type name_of_op);
+        (operation_of_name name_of_op);
         data = d1 ++ d2;
         }
       else
-        raise (Error "The compiler is not finished.")
+        {
+          text = t1 ++
+          subq (imm 8) (reg rsp) ++
+          inline "movq  %rax, (%rsp)" ++
+          t2 ++
+          movq (reg rax) (reg rsi) ++
+          inline "movq  (%rsp), %rdi" ++
+          addq (imm 8) (reg rsp) ++
+          (operation_of_name name_of_op);
+          data = d1 ++ d2;
+        }
     end
   |Empty -> raise (Error "An expression cannot be empty.")
 
-and fn_of_name name_of_fn =
+and fn_of_name name_of_fn type_arg =
   match name_of_fn with 
   |"Plus" ->
     compile_Plus
   |"Minus" ->
-    compile_Minus
+    begin
+      match type_arg with
+      |"integer" -> compile_Minus
   |_ ->
     raise (Error (Printf.sprintf "The function %s is not defined." name_of_fn))
 
-and operation_of_name_type name_of_op =
+and operation_of_name name_of_op =
   match name_of_op with
   |"Addition" -> compile_add_int
   |"Substraction" -> compile_sub_int
