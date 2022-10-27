@@ -8,7 +8,7 @@ test: executeOcaml createExe
 	./expression
 
 createExe:
-	gcc -no-pie expression.s -o add
+	gcc -no-pie expression.s -o expression
 
 executeOcaml:
 	./aritha

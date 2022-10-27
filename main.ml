@@ -6,7 +6,7 @@ open X86_64
 open Format
 
 
-let formula = "-46 % 9"
+let formula = "2.*.3.14*.3.14*.3.14 -. 3.14*.3.14-.3.14"
 ;;
 
 let lex = lexical_analysis formula

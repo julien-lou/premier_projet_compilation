@@ -65,18 +65,14 @@ let complete_word f n =
       |')' -> ")"
       |'+' ->
         begin
-          if n < len - 1 && is_digit f.[n + 1] then
-            (String.make 1 f.[n]) ^ (get_number f (n + 1))
-          else if n < len - 1 && f.[n + 1] = '.' then
+          if n < len - 1 && f.[n + 1] = '.' then
             "+."
           else
             "+"
         end
       |'-' ->
         begin
-          if n < len - 1 && is_digit f.[n + 1] then
-            (String.make 1 f.[n]) ^ (get_number f (n + 1))
-          else if n < len - 1 && f.[n + 1] = '.' then
+          if n < len - 1 && f.[n + 1] = '.' then
             "-."
           else
             "-"
@@ -130,7 +126,7 @@ let contain_letter f =
         aux str (n + 1)
   in aux f 0
 
-let lexical_analysis f =
+let pre_lexical_analysis f =
   let len = (String.length f) in
   let rec aux index str =
     if index < len then match (complete_word str index) with
@@ -159,6 +155,63 @@ let lexical_analysis f =
     else []
   in aux 0 f
 ;;
+
+let is_next_number lexeme_list =
+  match lexeme_list with
+  |[] -> false
+  |h::t ->
+    begin
+      match h with
+      |Integer_lex(_) -> true
+      |Float_lex(_) -> true
+      |_ -> false
+    end
+
+let specific_cases lexeme_list = (* 1++1 is equal to 1 + (+1) *)
+  let rec aux list_of_lexeme str_sign no_operator_before =
+    match list_of_lexeme with
+    |[] -> []
+    |h::t ->
+      match h with
+      |Integer_lex(number) ->
+        begin
+          if str_sign = "" then
+            Integer_lex(number)::(aux t "" true)
+          else
+            Integer_lex(int_of_string (str_sign ^ (string_of_int number)))::(aux t "" true)
+        end
+      |Float_lex(number) ->
+        begin
+          if str_sign = "" then
+            Float_lex(number)::(aux t "" true)
+          else
+            Float_lex(float_of_string (str_sign ^ (string_of_float number)))::(aux t "" true)
+        end
+      |Plus_sign ->
+        begin
+          if (no_operator_before) then
+            Plus_sign::(aux t "" false)
+          else if (is_next_number t) then
+            (aux t "+" false)
+          else
+            Plus_sign::(aux t "+" false)
+        end
+      |Minus_sign ->
+        begin
+          if (no_operator_before) then
+            Minus_sign::(aux t "" false)
+          else if (is_next_number t) then
+            (aux t "-" false)
+          else
+            Plus_sign::(aux t "-" false)
+        end
+      |Right_parenthesis -> Right_parenthesis::(aux t "" true)
+      |_ -> h::(aux t "" false)
+  in aux lexeme_list "" false
+
+
+let lexical_analysis f =
+  (specific_cases (pre_lexical_analysis f))
 
 exception Error of string
 ;;
@@ -380,12 +433,24 @@ let syntax_analysis lexeme_list =
             begin 
               match left_exp with
                 |Empty ->
-                  begin 
-                    if (head t) = Left_parenthesis then
-                      let priority_exp, rest = largest_priority_expression t in
-                      aux rest (Function("Plus", (aux priority_exp Empty)))
-                    else
-                      raise (Error "Missing parentheses after addition sign.")
+                  begin
+                    match (head t) with
+                    |Left_parenthesis ->
+                      begin
+                        let priority_exp, rest = largest_priority_expression t in
+                        aux rest (Function("Plus", (aux priority_exp Empty)))
+                      end
+                    |Integer_lex(number) ->
+                      begin
+                        let priority_exp, rest = largest_priority_expression t in
+                        aux rest (Function("Plus", (aux priority_exp Empty)))
+                      end
+                    |Float_lex(number) ->
+                      begin
+                        let priority_exp, rest = largest_priority_expression t in
+                        aux rest (Function("Plus", (aux priority_exp Empty)))
+                      end
+                    |_ -> raise (Error "Missing parentheses after addition sign.")
                   end
                 |_ ->
                   begin 
@@ -407,12 +472,24 @@ let syntax_analysis lexeme_list =
             begin 
               match left_exp with
                 |Empty ->
-                  begin 
-                    if (head t) = Left_parenthesis then
-                      let priority_exp, rest = largest_priority_expression t in
-                      aux rest (Function("Minus", (aux priority_exp Empty)))
-                    else
-                      raise (Error "Missing parentheses after substraction sign.")
+                  begin
+                    match (head t) with
+                    |Left_parenthesis ->
+                      begin
+                        let priority_exp, rest = largest_priority_expression t in
+                        aux rest (Function("Minus", (aux priority_exp Empty)))
+                      end
+                    |Integer_lex(number) ->
+                      begin
+                        let priority_exp, rest = largest_priority_expression t in
+                        aux rest (Function("Minus", (aux priority_exp Empty)))
+                      end
+                    |Float_lex(number) ->
+                      begin
+                        let priority_exp, rest = largest_priority_expression t in
+                        aux rest (Function("Minus", (aux priority_exp Empty)))
+                      end
+                    |_ -> raise (Error "Missing parentheses after substraction sign.")
                   end
                 |_ ->
                   begin 

@@ -157,170 +157,179 @@ let head l =
   |[] -> Integer_lex(0)
   |h::t -> h
 
-let syntax_analysis lexeme_list = 
-  let rec aux current_list left_exp =
-    match current_list with
-      |[] -> left_exp
-      |h::[] -> 
-        begin match h with
-          |Integer_lex(number) -> 
-            begin
-              if left_exp = Empty then
-                Integer(number)
-              else
-                raise (Error "Missing operator between arguments.")
-            end
-          |Float_lex(number) ->
-            begin
-              if left_exp = Empty then
-                Float(number)
-              else
-                raise (Error "Missing operator between arguments.")
-            end
-          |Plus_sign -> raise (Error "Missing argument in addition.")
-          |Minus_sign -> raise (Error "Missing argument in substraction.")
-          |Multiplication_sign -> raise (Error "Missing argument in multiplication.")
-          |Division_sign -> raise (Error "Missing argument in division.")
-          |Modulus_sign -> raise (Error "Missing argument in modulus.")
-          |Plus_sign_dot -> raise (Error "Missing argument in addition.")
-          |Minus_sign_dot -> raise (Error "Missing argument in substraction.")
-          |Multiplication_sign_dot -> raise (Error "Missing argument in multiplication.")
-          |Function_lex(fn_name) -> raise (Error (Printf.sprintf "Missing argument in function %s." fn_name))
-          |Left_parenthesis -> raise (Error "Missing right parenthesis.")
-          |Right_parenthesis -> raise (Error "Parser error : syntax_analysis.")
-        end
-      |h::t ->  
-        begin match h with
-          |Integer_lex(number) -> 
-            begin
-              if left_exp = Empty then
-                aux t (Integer(number))
-              else
-                raise (Error "Missing operator between arguments.")
-            end
-          |Float_lex(number) ->
-            begin
-              if left_exp = Empty then
-                aux t (Float(number))
-              else
-                raise (Error "Missing operator between arguments.")
-            end
-          |Plus_sign -> 
-            begin 
-              match left_exp with
-                |Empty ->
-                  begin 
-                    if (head t) = Left_parenthesis then
+let tail l=
+  match l with
+  |[] -> []
+  |h::t -> t
+
+  let syntax_analysis lexeme_list = 
+    let rec aux current_list left_exp =
+      match current_list with
+        |[] -> left_exp
+        |h::[] -> 
+          begin match h with
+            |Integer_lex(number) -> 
+              begin
+                if left_exp = Empty then
+                  Integer(number)
+                else
+                  raise (Error "Missing operator between arguments.")
+              end
+            |Float_lex(number) ->
+              begin
+                if left_exp = Empty then
+                  Float(number)
+                else
+                  raise (Error "Missing operator between arguments.")
+              end
+            |Plus_sign -> raise (Error "Missing argument in addition.")
+            |Minus_sign -> raise (Error "Missing argument in substraction.")
+            |Multiplication_sign -> raise (Error "Missing argument in multiplication.")
+            |Division_sign -> raise (Error "Missing argument in division.")
+            |Modulus_sign -> raise (Error "Missing argument in modulus.")
+            |Plus_sign_dot -> raise (Error "Missing argument in addition.")
+            |Minus_sign_dot -> raise (Error "Missing argument in substraction.")
+            |Multiplication_sign_dot -> raise (Error "Missing argument in multiplication.")
+            |Function_lex(fn_name) -> raise (Error (Printf.sprintf "Missing argument in function %s." fn_name))
+            |Left_parenthesis -> raise (Error "Missing right parenthesis.")
+            |Right_parenthesis -> raise (Error "Parser error : syntax_analysis.")
+          end
+        |h::t ->  
+          begin match h with
+            |Integer_lex(number) -> 
+              begin
+                if left_exp = Empty then
+                  aux t (Integer(number))
+                else
+                  raise (Error "Missing operator between arguments.")
+              end
+            |Float_lex(number) ->
+              begin
+                if left_exp = Empty then
+                  aux t (Float(number))
+                else
+                  raise (Error "Missing operator between arguments.")
+              end
+            |Plus_sign -> 
+              begin 
+                match left_exp with
+                  |Empty ->
+                    begin
+                      match (head t) with
+                      |Left_parenthesis ->
+                        begin
+                          let priority_exp, rest = largest_priority_expression t in
+                          aux rest (Function("Plus", (aux priority_exp Empty)))
+                        end
+                      |_ -> raise (Error "Missing parentheses after addition sign.")
+                    end
+                  |_ ->
+                    begin 
                       let priority_exp, rest = largest_priority_expression t in
-                      aux rest (Function("Plus", (aux priority_exp Empty)))
-                    else
-                      raise (Error "Missing parentheses after addition sign.")
-                  end
-                |_ ->
-                  begin 
-                    let priority_exp, rest = largest_priority_expression t in
-                    aux rest (Operation("Addition_int", left_exp, (aux priority_exp Empty)))
-                  end
-            end
-          |Plus_sign_dot ->
-            begin 
-              match left_exp with
-                |Empty -> raise (Error "Missing parentheses after addition sign.")
-                |_ ->
-                  begin 
-                    let priority_exp, rest = largest_priority_expression t in
-                    aux rest (Operation("Addition_float", left_exp, (aux priority_exp Empty)))
-                  end
-            end
-          |Minus_sign -> 
-            begin 
-              match left_exp with
-                |Empty ->
-                  begin 
-                    if (head t) = Left_parenthesis then
+                      aux rest (Operation("Addition_int", left_exp, (aux priority_exp Empty)))
+                    end
+              end
+            |Plus_sign_dot ->
+              begin 
+                match left_exp with
+                  |Empty -> raise (Error "Missing parentheses after addition sign.")
+                  |_ ->
+                    begin 
                       let priority_exp, rest = largest_priority_expression t in
-                      aux rest (Function("Minus", (aux priority_exp Empty)))
-                    else
-                      raise (Error "Missing parentheses after substraction sign.")
-                  end
-                |_ ->
-                  begin 
-                    let priority_exp, rest = largest_priority_expression t in
-                    aux rest (Operation("Substraction_int", left_exp, (aux priority_exp Empty)))
-                  end
-            end
-          |Minus_sign_dot ->
-            begin 
-              match left_exp with
-                |Empty -> raise (Error "Missing parentheses after substraction sign.")
-                |_ ->
-                  begin 
-                    let priority_exp, rest = largest_priority_expression t in
-                    aux rest (Operation("Substraction_float", left_exp, (aux priority_exp Empty)))
-                  end
-            end
-          |Multiplication_sign -> 
-            begin 
-              match left_exp with
-                |Empty -> raise (Error "Missing left argument in multiplication.")
-                |_ ->
-                  begin 
-                    let independent_exp, rest = largest_independent_expression t in
-                    aux rest (Operation("Multiplication_int", left_exp, (aux independent_exp Empty)))
-                  end
-            end
-          |Multiplication_sign_dot ->
-            begin 
-              match left_exp with
-                |Empty -> raise (Error "Missing left argument in multiplication.")
-                |_ ->
-                  begin 
-                    let independent_exp, rest = largest_independent_expression t in
-                    aux rest (Operation("Multiplication_float", left_exp, (aux independent_exp Empty)))
-                  end
-            end
-          |Division_sign -> 
-            begin 
-              match left_exp with
-                |Empty -> raise (Error "Missing left argument in division.")
-                |_ ->
-                  begin 
-                    let independent_exp, rest = largest_independent_expression t in
-                    aux rest (Operation("Division", left_exp, (aux independent_exp Empty)))
-                  end
-            end
-          |Modulus_sign -> 
-            begin 
-              match left_exp with
-                |Empty -> raise (Error "Missing left argument in modulus.")
-                |_ ->
-                  begin 
-                    let independent_exp, rest = largest_independent_expression t in
-                    aux rest (Operation("Modulo", left_exp, (aux independent_exp Empty)))
-                  end
-            end
-          |Function_lex(fn_name) ->
-            begin 
-              match left_exp with
-                |Empty ->
-                  begin 
-                    if (head t) = Left_parenthesis then
+                      aux rest (Operation("Addition_float", left_exp, (aux priority_exp Empty)))
+                    end
+              end
+            |Minus_sign -> 
+              begin 
+                match left_exp with
+                  |Empty ->
+                    begin
+                      match (head t) with
+                      |Left_parenthesis ->
+                        begin
+                          let priority_exp, rest = largest_priority_expression t in
+                          aux rest (Function("Minus", (aux priority_exp Empty)))
+                        end
+                      |_ -> raise (Error "Missing parentheses after substraction sign.")
+                    end
+                  |_ ->
+                    begin 
                       let priority_exp, rest = largest_priority_expression t in
-                      aux rest (Function(fn_name, (aux priority_exp Empty)))
-                    else
-                      raise (Error (Printf.sprintf "Missing parentheses after function %s." fn_name))
-                  end
-                |_ -> raise (Error "Missing operator between arguments.")
-            end
-          |Left_parenthesis ->
-            begin
-              let independent_exp,rest = largest_independent_expression current_list in
-              if (not (left_exp = Empty)) then
-                raise (Error "Missing operator between arguments.")
-              else
-                aux rest (Parentheses(aux (strip_parentheses independent_exp) Empty))
-            end
-          |Right_parenthesis -> raise (Error "Missing left parenthesis.")
-        end
-  in aux lexeme_list Empty
-;;
+                      aux rest (Operation("Substraction_int", left_exp, (aux priority_exp Empty)))
+                    end
+              end
+            |Minus_sign_dot ->
+              begin 
+                match left_exp with
+                  |Empty -> raise (Error "Missing parentheses after substraction sign.")
+                  |_ ->
+                    begin 
+                      let priority_exp, rest = largest_priority_expression t in
+                      aux rest (Operation("Substraction_float", left_exp, (aux priority_exp Empty)))
+                    end
+              end
+            |Multiplication_sign -> 
+              begin 
+                match left_exp with
+                  |Empty -> raise (Error "Missing left argument in multiplication.")
+                  |_ ->
+                    begin 
+                      let independent_exp, rest = largest_independent_expression t in
+                      aux rest (Operation("Multiplication_int", left_exp, (aux independent_exp Empty)))
+                    end
+              end
+            |Multiplication_sign_dot ->
+              begin 
+                match left_exp with
+                  |Empty -> raise (Error "Missing left argument in multiplication.")
+                  |_ ->
+                    begin 
+                      let independent_exp, rest = largest_independent_expression t in
+                      aux rest (Operation("Multiplication_float", left_exp, (aux independent_exp Empty)))
+                    end
+              end
+            |Division_sign -> 
+              begin 
+                match left_exp with
+                  |Empty -> raise (Error "Missing left argument in division.")
+                  |_ ->
+                    begin 
+                      let independent_exp, rest = largest_independent_expression t in
+                      aux rest (Operation("Division_int", left_exp, (aux independent_exp Empty)))
+                    end
+              end
+            |Modulus_sign -> 
+              begin 
+                match left_exp with
+                  |Empty -> raise (Error "Missing left argument in modulus.")
+                  |_ ->
+                    begin 
+                      let independent_exp, rest = largest_independent_expression t in
+                      aux rest (Operation("Modulo_int", left_exp, (aux independent_exp Empty)))
+                    end
+              end
+            |Function_lex(fn_name) ->
+              begin 
+                match left_exp with
+                  |Empty ->
+                    begin 
+                      if (head t) = Left_parenthesis then
+                        let priority_exp, rest = largest_priority_expression t in
+                        aux rest (Function(fn_name, (aux priority_exp Empty)))
+                      else
+                        raise (Error (Printf.sprintf "Missing parentheses after function %s." fn_name))
+                    end
+                  |_ -> raise (Error "Missing operator between arguments.")
+              end
+            |Left_parenthesis ->
+              begin
+                let independent_exp,rest = largest_independent_expression current_list in
+                if (not (left_exp = Empty)) then
+                  raise (Error "Missing operator between arguments.")
+                else
+                  aux rest (Parentheses(aux (strip_parentheses independent_exp) Empty))
+              end
+            |Right_parenthesis -> raise (Error "Missing left parenthesis.")
+          end
+    in aux lexeme_list Empty
+  ;;
