@@ -1,3 +1,8 @@
+(*
+  Asyntax
+  Define the syntax tree.
+*)
+
 exception Error of string
 
 type arith_exp =

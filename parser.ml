@@ -1,7 +1,12 @@
+(*
+  Parser
+  Do the syntax analysis on the list of lexemes and return an AST (Abstract Syntax Tree)
+*)
+
 open Lexer
 open Asyntax
 
-let rec largest_independent_expression lexeme_list =
+let rec largest_independent_expression lexeme_list = (* get the largest independent expression (in parentheses or number) starting from the first element of the list *)
   let rec aux list_of_lexeme int_stack =
     match list_of_lexeme with
       |[] -> ([], [])
@@ -127,7 +132,7 @@ let rec largest_independent_expression lexeme_list =
   in aux lexeme_list 0
 ;;
 
-let rec largest_priority_expression lexeme_list =
+let rec largest_priority_expression lexeme_list = (* get the largest expression that is executed before a sum or a substraction starting from the list *)
   let rec aux list_of_lexeme left =
     let independent, rest = largest_independent_expression list_of_lexeme in
     match rest with
@@ -162,7 +167,7 @@ let tail l=
   |[] -> []
   |h::t -> t
 
-  let syntax_analysis lexeme_list = 
+  let syntax_analysis lexeme_list = (* return an AST from a list of lexemes *)
     let rec aux current_list left_exp =
       match current_list with
         |[] -> left_exp

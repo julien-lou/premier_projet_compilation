@@ -1,6 +1,12 @@
+(*
+  Type checking
+  Check if the AST is correctly typed. (TAST)
+*)
+
+
 open Asyntax
 
-let rec static_analysis tree =
+let rec static_analysis tree = (* return the type of the expression, interrupt if the expression is not correctly typed *)
   match tree with
   |Empty -> "empty"
   |Parentheses(subtree) -> static_analysis subtree

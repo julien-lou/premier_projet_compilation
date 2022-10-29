@@ -1,14 +1,11 @@
-INTERFACE := x86_64.cmi lexer.cmi asyntax.cmi parser.cmi typecheck.cmi asmeditor.cmi
-MAIN_OBJS := x86_64.cmo lexer.cmo asyntax.cmo parser.cmo typecheck.cmo asmeditor.cmo main.cmo
+INTERFACE := readfile.cmi x86_64.cmi lexer.cmi asyntax.cmi parser.cmi typecheck.cmi asmeditor.cmi
+MAIN_OBJS := readfile.cmo x86_64.cmo lexer.cmo asyntax.cmo parser.cmo typecheck.cmo asmeditor.cmo main.cmo
 
 
-all: aritha
+all: aritha rapport.pdf
 
-test: executeOcaml createExe
-	./expression
-
-createExe:
-	gcc -no-pie expression.s -o expression
+rapport.pdf:
+	pdflatex -shell-escape rapport.tex
 
 executeOcaml:
 	./aritha
@@ -27,6 +24,7 @@ asyntax.cmi: asyntax.mli
 parser.cmi: parser.mli
 typecheck.cmi: typecheck.mli
 asmeditor.cmi: asmeditor.mli
+readfile.cmi: readfile.mli
 
 x86_64.cmo: x86_64.ml
 lexer.cmo: lexer.ml
@@ -35,6 +33,7 @@ parser.cmo: parser.ml
 typecheck.cmo: typecheck.ml
 asmeditor.cmo: asmeditor.ml
 main.cmo: main.ml
+readfile.cmo: readfile.ml	
 
 clean:
 	rm -f aritha expression *.cmi *.cmo *.s

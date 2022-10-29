@@ -1,3 +1,9 @@
+(* 
+  Lexer
+  Get the list of lexemes from a string.
+*)
+
+
 type lexeme =
     Integer_lex of int
   | Float_lex of float
@@ -13,4 +19,6 @@ type lexeme =
   | Multiplication_sign_dot
   | Function_lex of string
   
+
+(* get the list of lexemes from a string *)
 val lexical_analysis : string -> lexeme list

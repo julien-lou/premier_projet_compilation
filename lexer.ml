@@ -1,3 +1,9 @@
+(* 
+  Lexer
+  Get the list of lexemes from a string.
+*)
+
+
 type lexeme =
   |Integer_lex of int
   |Float_lex of float
@@ -19,7 +25,7 @@ let is_digit c =
   |'0' .. '9' -> true
   |_ -> false
 
-let complete_word f n =
+let complete_word f n = (* get the complete word in string f starting at position n *)
   let rec get_number f1 n1 =
     let len = String.length f1 in
     if n1 >= len
@@ -126,7 +132,7 @@ let contain_letter f =
         aux str (n + 1)
   in aux f 0
 
-let pre_lexical_analysis f =
+let pre_lexical_analysis f = (* get the list of lexemes without specific cases *)
   let len = (String.length f) in
   let rec aux index str =
     if index < len then match (complete_word str index) with
@@ -167,7 +173,7 @@ let is_next_number lexeme_list =
       |_ -> false
     end
 
-let specific_cases lexeme_list = (* 1++1 is equal to 1 + (+1) *)
+let specific_cases lexeme_list = (* 1++1 is equal to 1 + (+1) *) (* simplify the list of lexemes in specific cases *)
   let rec aux list_of_lexeme str_sign no_operator_before =
     match list_of_lexeme with
     |[] -> []
@@ -210,5 +216,5 @@ let specific_cases lexeme_list = (* 1++1 is equal to 1 + (+1) *)
   in aux lexeme_list "" false
 
 
-let lexical_analysis f =
+let lexical_analysis f = (* get the list of lexemes from a string *)
   (specific_cases (pre_lexical_analysis f))

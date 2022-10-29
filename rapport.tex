@@ -1,0 +1,34 @@
+\documentclass[12pt,french]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{minted}
+\usepackage{babel}
+\usepackage[babel=true]{microtype}
+
+\setminted{fontsize=\small, frame=single}
+
+\title{Rapport de projet de programmation}
+\author{Julien Lou}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Difficultés rencontrées}
+
+L'écriture du lexer et du parser a été difficile tout le long du projet car je n'ai pas utilisé les outils ocamllex et ocamlyacc. Des exemples de problèmes rencontrés seront listés ci-dessous.
+
+\subsection{Addition des entiers}
+Additionner quatre entiers en assembleur est plus difficile que prévu. En effet, il faut réussir à mémoriser les résultats des calculs intermédiaires sans recourir aux registres (qui sont écrasés au cours de d'autres calculs). La solution est d'utiliser la pile, et d'empiler les résultats des calculs intermédiaires pour les utiliser plus tard.
+
+\subsection{Entrée des flottants}
+Pour effectuer le calcul des flottants, il faut d'abord pouvoir les donner en donnée dans le programme assembleur. Pour cela, une des méthodes est de les déclarer dans le .data, cependant cela nécessite de déclarer un nombre arbitrairement grand de label. Pour cela, j'ai recouru à une variable globale impérative (let n = ref int) pour prendre en compte le nombre de flottants déjà entrés en données.
+
+\subsection{Reconnaissance des entiers et des flottants signés}
+Dans la spécification, il est mentionné que $+1$ et $-1$ sont des entiers. En particulier, cela signifie que $1++1$ est une expression acceptable, équivalent à $1+(+1)$. Cependant, une implémentation naïve du lexer réglant ce problème ne reconnaît pas $1+1$ car il est lu comme $1 (+1)$. L'ajout de la fonction \textit{specific cases} résout ce problème.
+
+\section{Autres remarques}
+Normalement tous les cas sont correctement gérés, et les messages d'erreur envoyés sont précis et spécifiques à chaque cas. Aucun bonus n'a été implémenté.
+
+
+\end{document}

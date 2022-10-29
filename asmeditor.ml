@@ -1,3 +1,10 @@
+(* 
+  asm editor
+  Edit the *.s file based on the TAST.
+*)
+
+
+
 open Format
 open X86_64
 open Asyntax
@@ -57,7 +64,7 @@ let rec compile_expr e =  (* n counts the quantity of data already used *)
     end
   |Empty -> raise (Error "An expression cannot be empty.")
 
-and fn_of_name name_of_fn type_arg =
+and fn_of_name name_of_fn type_arg = (* get the function with a string containing the name of the function *)
   match name_of_fn with 
   |"Plus" ->
     compile_Plus
@@ -73,7 +80,7 @@ and fn_of_name name_of_fn type_arg =
   |_ ->
     raise (Error (Printf.sprintf "The function %s is not defined." name_of_fn))
 
-and operation_of_name name_of_op =
+and operation_of_name name_of_op = (* get the operation with a string containing the name of the operator *)
   match name_of_op with
   |"Addition_int" -> compile_add_int
   |"Addition_float" -> compile_add_float
@@ -139,7 +146,7 @@ let end_main =
   xorq  (reg rax) (reg rax) ++
   ret
 
-let define_functions =
+let define_functions = (* define main functions used in assembly; included in every file *)
   inline "
 plus:
         movq    %rdi, %rax
@@ -257,7 +264,7 @@ let define_labels =
   inline "
   "
 
-let create_code e =
+let create_code e = (* create the assembly code based on the TAST *)
   let comp = compile_expr e in
   let t = comp.text in
   let d = comp.data in
